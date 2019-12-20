@@ -1,0 +1,12 @@
+% start S
+% syntax S
+  S -> C
+% skip
+  S -> C '\n' S
+  C -> V '=' E
+  V -> 'x' | 'y' | 'z'
+  E -> V | '(' E '+' E ')' | E '*' E | 'a'
+% add
+  E -> '(' E '-' E ')'  | 'b'
+% add
+  V -> 'u'
