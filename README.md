@@ -75,3 +75,11 @@ Directives 'syntax' and 'add' are considered only for dynamic grammars mode. Thi
     E = '(' E '-' E ')'  | 'b' # this production is marked as addition in dynamic grammars
     % add
     V = 'u'                    # and this is also
+    
+### An example of output file
+
+    x = ( a * a + a * a )
+    %syntax: E = ( E - E )
+    y = ( a * ( x - a ) + a )
+    %syntax: E = b
+    z = ( z + b )
