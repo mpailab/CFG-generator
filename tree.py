@@ -19,24 +19,33 @@ class Node (object):
     def is_root (self):
         return self._parent is None
 
+    @property
     def symbol (self):
         return self._symbol
 
+    @property
     def parent (self):
         return self._parent
 
-    def childs (self, childs = None):
-        if childs is None:
-            return self._childs
+    @property
+    def childs (self):
+        return self._childs
+
+    @childs.setter
+    def childs (self, childs):
         assert ( isinstance(childs, list) and all ( isinstance(x, Node) for x in childs ) )
         self._childs = childs
 
+    @property
     def depth (self):
         return self._depth
 
-    def production (self, prod = None):
-        if prod is None:
-            return self._production
+    @property
+    def production (self):
+        return self._production
+
+    @production.setter
+    def production (self, prod):
         assert ( isinstance(prod, Production) )
         self._production = prod
 
@@ -48,8 +57,8 @@ class Node (object):
 
     def terminals (self):
         nodes = [self]
-        while any (x.childs() for x in nodes):
-            nodes = [ y for x in nodes for y in (x.childs() if x.childs() else [x]) ]
+        while any (x.childs for x in nodes):
+            nodes = [ y for x in nodes for y in (x.childs if x.childs else [x]) ]
         return nodes
     
     def _to_str (self):
@@ -63,10 +72,10 @@ class Node (object):
             childs_res = list(zip(*map(lambda x: x._to_str(), self._childs)))
             string = ' '.join(childs_res[0])
             prods = { k : v for d in childs_res[1] for k, v in d.items()}
-            if prod.is_add():
+            if prod.add:
                 prods[prod] = 1
 
-        if (self._symbol.is_syntax() or self._parent is None) and prods:
+        if (self._symbol.syntax or self._parent is None) and prods:
             string = ''.join(map(lambda x: '%syntax: ' + str(x) + '\n', prods.keys())) + string
             prods = {}
 
@@ -74,7 +83,7 @@ class Node (object):
     
     def to_str (self, simple = False):
         if simple:
-            string = ' '.join(list(map(lambda x: str(x.symbol()), self.terminals())))
+            string = ' '.join(list(map(lambda x: str(x.symbol), self.terminals())))
         else:
             string, prods = self._to_str()
             assert (not prods)
@@ -87,8 +96,8 @@ class Tree (object):
         assert ( isinstance(symbol, Symbol) )
 
         self._root = Node(symbol)
-        self._skips = [self._root] if symbol.is_skip() else []
-        self._leaves = [] if symbol.is_terminal() else [self._root]
+        self._skips = [self._root] if symbol.skip else []
+        self._leaves = [] if symbol.terminal else [self._root]
         self._size = 1
 
     def root (self):
@@ -101,33 +110,33 @@ class Tree (object):
         if depth is None:
             return self._leaves
         assert ( isinstance(depth, int) )
-        return [ x for x in self._leaves if x.depth() < depth ]
+        return [ x for x in self._leaves if x.depth < depth ]
 
     def size (self):
         return self._size
 
     def insert (self, node, prod):
 
-        assert ( isinstance(node, Node) and not node.symbol().is_terminal() and
-                 isinstance(prod, Production) and node.symbol() == prod.lhs() )
+        assert ( isinstance(node, Node) and not node.symbol.terminal and
+                 isinstance(prod, Production) and node.symbol == prod.lhs )
 
-        depth = node.depth() if prod.is_skip() else node.depth() + 1
-        childs = [ Node(x, node, depth) for x in prod.rhs() ]
+        depth = node.depth if prod.skip else node.depth + 1
+        childs = [ Node(x, node, depth) for x in prod.rhs ]
 
-        if node.symbol() in prod.rhs() and node.production() is not None:
-            i = prod.rhs().index(node.symbol())
+        if node.symbol in prod.rhs and node.production is not None:
+            i = prod.rhs.index(node.symbol)
             child = childs[i]
-            child.childs(node.childs())
-            child.production(node.production())
-            self._leaves += [ x for x in childs if not x.symbol().is_terminal() and x != child ]
+            child.childs = node.childs
+            child.production = node.production
+            self._leaves += [ x for x in childs if not x.symbol.terminal and x != child ]
         else:
             assert (node in self._leaves)
             self._leaves.remove(node)
-            self._leaves += [ x for x in childs if not x.symbol().is_terminal() ]
+            self._leaves += [ x for x in childs if not x.symbol.terminal ]
             
-        node.childs(childs)
-        node.production(prod)
-        self._skips += [ x for x in childs if x.symbol().is_skip() ]
+        node.childs = childs
+        node.production = prod
+        self._skips += [ x for x in childs if x.symbol.skip ]
         self._size += len(childs)
 
     def __str__ (self):

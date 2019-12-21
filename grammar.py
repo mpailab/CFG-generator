@@ -32,35 +32,39 @@ class Symbol (object):
     def __hash__ (self):
         return hash(self._symbol)
 
+    @property
     def syntax (self):
-        self._syntax = True
-
-    def is_syntax (self):
         return self._syntax
 
-    def skip (self, skip):
-        self._skip = skip
+    @syntax.setter
+    def syntax (self, value):
+        assert ( isinstance(value, bool) )
+        self._syntax = value
 
-    def is_skip (self):
+    @property
+    def skip (self):
         return self._skip
 
-    def is_terminal (self):
+    @skip.setter
+    def skip (self, value):
+        assert ( isinstance(value, bool) )
+        self._skip = value
+
+    @property
+    def terminal (self):
         return self._terminal
 
 class Terminal (Symbol):
 
     def __init__ (self, symbol):
-        assert ( isinstance(symbol, str) )
-        self._symbol = symbol
-        self._syntax = False
-        self._skip = False
+        Symbol.__init__(self, symbol)
         self._terminal = True
 
 class Production (object):
 
     def __init__ (self, lhs, rhs, add = False, skip = False, deriv_symbol = '->'):
 
-        assert ( isinstance(lhs, Symbol) and not lhs.is_terminal() and
+        assert ( isinstance(lhs, Symbol) and not lhs.terminal and
                  isinstance(rhs, list) and all (isinstance(x, Symbol) for x in rhs) and
                  isinstance(add, bool) and isinstance(skip, bool) and
                  isinstance(deriv_symbol, str) )
@@ -77,22 +81,28 @@ class Production (object):
     def __hash__ (self):
         return hash((self._lhs, tuple(self._rhs)))
 
+    @property
     def lhs (self):
         return self._lhs
 
+    @property
     def rhs (self):
         return self._rhs
 
-    def is_add (self):
+    @property
+    def add (self):
         return self._add
 
-    def is_skip (self):
+    @property
+    def skip (self):
         return self._skip
 
-    def is_ground (self):
-        return all (x.is_terminal() for x in self._rhs)
+    @property
+    def ground (self):
+        return all (x.terminal for x in self._rhs)
 
-    def to_pair (self):
+    @property
+    def pair (self):
         return (self._lhs, self._rhs)
 
     # Apply a substitution of the form { nonterminal -> rhs }
@@ -102,10 +112,9 @@ class Production (object):
 
 def _ground_subst (prods):
     map_to_ground = {}
-    if prods:
-        map_to_ground = dict([ x.to_pair() for x in prods if x.is_ground() ])
-        prods = [ x.subst(map_to_ground) for x in prods if not x.is_ground() ]
-        map_to_ground.update(_ground_subst(prods))
+    while prods:
+        map_to_ground.update([ x.pair for x in prods if x.ground ])
+        prods = [ x.subst(map_to_ground) for x in prods if not x.lhs in map_to_ground ]
     return map_to_ground
 
 # Class of context-free grammars
@@ -117,13 +126,13 @@ class CFG (object):
                    prods_map = None, # hash of productions { symbol -> list of productions }
                    deriv_symbol = '->'): # derivation symbol
 
-        assert ( isinstance(start, Symbol) and not start.is_terminal() and
+        assert ( isinstance(start, Symbol) and not start.terminal and
                  isinstance(prods_list, list) and 
                  all ( isinstance(x, Production) for x in prods_list ) and
                  isinstance(prods_map, dict) and 
-                 all ( ( isinstance(s, Symbol) and not s.is_terminal() and
+                 all ( ( isinstance(s, Symbol) and not s.terminal and
                          isinstance(l, list) and 
-                         all ( isinstance(x, Production) and s == x.lhs() for x in l ) ) 
+                         all ( isinstance(x, Production) and s == x.lhs for x in l ) ) 
                        for s, l in prods_map.items() ) )
 
         self._start = start
@@ -132,7 +141,7 @@ class CFG (object):
         if self._prods_map is None:
             self._prods_map = {}
             for prod in prods_list:
-                s = prod.lhs()
+                s = prod.lhs
                 if s in self._prods_map:
                     self._prods_map[s].append(prod)
                 else:
@@ -148,14 +157,14 @@ class CFG (object):
         return self._prods_list
 
     def skip_prods (self):
-        return { k : [ x for x in v if x.is_skip() ] for k, v in self._prods_map.items() if k.is_skip() }
+        return { k : [ x for x in v if x.skip ] for k, v in self._prods_map.items() if k.skip }
 
     def symbol_prods (self, symbol):
-        assert ( isinstance(symbol, Symbol) and not symbol.is_terminal() )
+        assert ( isinstance(symbol, Symbol) and not symbol.terminal )
         return self._prods_map[symbol]
 
     def symbol_ground (self, symbol):
-        assert ( isinstance(symbol, Symbol) and not symbol.is_terminal() )
+        assert ( isinstance(symbol, Symbol) and not symbol.terminal )
         return self._ground_prods[symbol]
     
     @classmethod
@@ -248,7 +257,7 @@ def _parse_grammar (source, deriv_symbol = '->'):
                     pos = 0
                     while pos != len(directive[1]):
                         syntax_symbol, pos = _parse_nonterminal(directive[1], pos)
-                        syntax_symbol.syntax()
+                        syntax_symbol.syntax = True
 
                 elif directive[0] == 'add':
                     if len(directive) > 1:
@@ -264,7 +273,7 @@ def _parse_grammar (source, deriv_symbol = '->'):
             else:
 
                 lhs, prods = _parse_production(line, deriv_symbol, is_add_prod, is_skip_prod)
-                lhs.skip(is_skip_prod)
+                lhs.skip = is_skip_prod
                 prods_list += prods
                 if lhs in prods_map:
                     prods_map[lhs] += prods

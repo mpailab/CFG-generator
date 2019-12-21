@@ -11,22 +11,20 @@ def run (grammar, depth, size = 1000000):
         if leaves:
             shuffle(leaves)
             k = randint(1, len(leaves))
-            for node in leaves[:k]:
-                prod = choice(grammar.symbol_prods(node.symbol()))
+                prod = choice(grammar.symbol_prods(node.symbol))
                 tree.insert(node, prod)
         else:
             skip_nodes = tree.skips()
             if skip_prods and skip_nodes:
                 shuffle(skip_nodes)
                 k = randint(1, len(skip_nodes))
-                for node in skip_nodes[:k]:
-                    prod = choice(skip_prods[node.symbol()])
+                    prod = choice(skip_prods[node.symbol])
                     tree.insert(node, prod)
             else:
                 break
     leaves = tree.leaves()
     for node in leaves[:]:
-        prod = grammar.symbol_ground(node.symbol())
+        prod = grammar.symbol_ground(node.symbol)
         tree.insert(node, prod)
     return tree
     
