@@ -40,7 +40,15 @@
 6. There are four directives  
 - set the start symbol of grammar:  
 
-        % start <nonterm>
+        % start <nonterm> 
+
+- set the indent token of grammar:
+
+        % indent <nonterm> 
+
+- set the dedent token of grammar:
+
+        % dedent <nonterm> 
         
 - set symbols such that additional productions can be inserted in derivation tree before subtrees corresponding these symbols:  
 

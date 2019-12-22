@@ -1,4 +1,6 @@
 import re
+from random import sample
+from itertools import product
 
 class Symbol (object):
 
@@ -12,7 +14,6 @@ class Symbol (object):
             return super(Symbol, cls).__new__(cls)
 
     def __init__ (self, symbol):
-        assert ( isinstance(symbol, str) )
         if symbol not in Symbol._dict:
             self._symbol = symbol
             self._syntax = False
@@ -62,7 +63,7 @@ class Terminal (Symbol):
 
 class Production (object):
 
-    def __init__ (self, lhs, rhs, add = False, skip = False, deriv_symbol = '->'):
+    def __init__ (self, lhs, rhs, add = False, skip = False, deriv_symbol = '='):
 
         assert ( isinstance(lhs, Symbol) and not lhs.terminal and
                  isinstance(rhs, list) and all (isinstance(x, Symbol) for x in rhs) and
@@ -98,24 +99,14 @@ class Production (object):
         return self._skip
 
     @property
-    def ground (self):
-        return all (x.terminal for x in self._rhs)
-
-    @property
     def pair (self):
         return (self._lhs, self._rhs)
 
     # Apply a substitution of the form { nonterminal -> rhs }
     def subst (self, f):
-        rhs = [ x for y in self._rhs for x in (f[y] if y in f else [y]) ]
-        return Production(self._lhs, rhs, deriv_symbol = self._deriv_symbol)
-
-def _ground_subst (prods):
-    map_to_ground = {}
-    while prods:
-        map_to_ground.update([ x.pair for x in prods if x.ground ])
-        prods = [ x.subst(map_to_ground) for x in prods if not x.lhs in map_to_ground ]
-    return map_to_ground
+        rhs = map(lambda x: f[x] if x in f else [[x]], self._rhs)
+        rhs = map(lambda x: [ z for y in x for z in y ], product(*rhs))
+        return [Production(self._lhs, x, deriv_symbol = self._deriv_symbol) for x in rhs]
 
 # Class of context-free grammars
 class CFG (object):
@@ -123,8 +114,10 @@ class CFG (object):
     def __init__ ( self,             # grammar
                    start,            # start symbol
                    prods_list,       # list of productions
+                   indent = None,    # indent symbol
+                   dedent = None,    # dedent symbol
                    prods_map = None, # hash of productions { symbol -> list of productions }
-                   deriv_symbol = '->'): # derivation symbol
+                   deriv_symbol = '='): # derivation symbol
 
         assert ( isinstance(start, Symbol) and not start.terminal and
                  isinstance(prods_list, list) and 
@@ -136,6 +129,8 @@ class CFG (object):
                        for s, l in prods_map.items() ) )
 
         self._start = start
+        self._indent = indent
+        self._dedent = dedent
         self._prods_list = prods_list
         self._prods_map = prods_map
         if self._prods_map is None:
@@ -147,12 +142,40 @@ class CFG (object):
                 else:
                     self._prods_map[s] = [prod]
         self._ground_prods = {}
-        for lhs, rhs in _ground_subst(prods_list).items():
-            self._ground_prods[lhs] = Production(lhs, rhs, deriv_symbol = deriv_symbol)
+        while prods_list:
+            next_prods_list = []
+            for prod in prods_list:
+                if all ( x.terminal or x in [indent, dedent] for x in prod.rhs) :
+                    s = prod.lhs
+                    if s in self._ground_prods:
+                        self._ground_prods[s].append(prod)
+                    else:
+                        self._ground_prods[s] = [prod]
+                else:
+                    next_prods_list.append(prod)
+            f = { k : (sample([ y.rhs for y in v ], 2) if len(v) > 1 else [v[0].rhs]) for k, v in self._ground_prods.items() }
+            prods_list = []
+            for prod in next_prods_list:
+                if prod.lhs in self._ground_prods:
+                    continue
+                if any ( x in self._ground_prods for x in prod.rhs ) :
+                    prods_list += prod.subst(f)
+                else:
+                    prods_list.append(prod)
 
+    @property
     def start (self):
         return self._start
 
+    @property
+    def indent (self):
+        return self._indent
+
+    @property
+    def dedent (self):
+        return self._dedent
+
+    @property
     def prods (self):
         return self._prods_list
 
@@ -168,11 +191,11 @@ class CFG (object):
         return self._ground_prods[symbol]
     
     @classmethod
-    def fromsource(cls, source, deriv_symbol = '->'):
+    def fromsource(cls, source, deriv_symbol = '='):
         assert ( ( isinstance(source, str) or hasattr(source, 'read') ) and 
                  isinstance(deriv_symbol, str) )
-        start, prods_list, prods_map = _parse_grammar(source, deriv_symbol)
-        return cls(start, prods_list, prods_map, deriv_symbol)
+        start, indent, dedent, prods_list, prods_map = _parse_grammar(source, deriv_symbol)
+        return cls(start, prods_list, indent, dedent, prods_map, deriv_symbol)
 
 def _parse_nonterminal (string, pos):
     m = re.compile(r'\s*([\w/][\w/^<>-]*)\s*').match(string, pos)
@@ -197,7 +220,7 @@ def _parse_production (string, deriv_symbol, is_add, is_skip):
 
         # String -- add terminal
         if string[pos] in "\'\"":
-            m = re.compile(r'(\"[^\"]+\"|\'[^\']+\')\s*').match(string, pos)
+            m = re.compile(r'(\"[^\"]*\"|\'[^\']*\')\s*').match(string, pos)
             if not m:
                 raise ValueError('Expected a terminal, found: ' + string[pos:])
             rhsides[-1].append(Terminal(m.group(1)[1:-1]))
@@ -218,9 +241,11 @@ def _parse_production (string, deriv_symbol, is_add, is_skip):
             
     return (lhs, [Production(lhs, rhs, is_add, is_skip, deriv_symbol) for rhs in rhsides])
 
-def _parse_grammar (source, deriv_symbol = '->'):
+def _parse_grammar (source, deriv_symbol = '='):
     
     start = None
+    indent = None
+    dedent = None
     prods_list = []
     prods_map = {}
     is_add_prod = False
@@ -256,8 +281,18 @@ def _parse_grammar (source, deriv_symbol = '->'):
                 elif directive[0] == 'syntax':
                     pos = 0
                     while pos != len(directive[1]):
-                        syntax_symbol, pos = _parse_nonterminal(directive[1], pos)
-                        syntax_symbol.syntax = True
+                        symbol, pos = _parse_nonterminal(directive[1], pos)
+                        symbol.syntax = True
+
+                elif directive[0] == 'indent':
+                    indent, pos = _parse_nonterminal(directive[1], 0)
+                    if pos != len(directive[1]):
+                        raise ValueError('Bad argument to indent directive')
+
+                elif directive[0] == 'dedent':
+                    dedent, pos = _parse_nonterminal(directive[1], 0)
+                    if pos != len(directive[1]):
+                        raise ValueError('Bad argument to dedent directive')
 
                 elif directive[0] == 'add':
                     if len(directive) > 1:
@@ -289,4 +324,4 @@ def _parse_grammar (source, deriv_symbol = '->'):
     if not prods_list:
         raise ValueError('No productions found!')
 
-    return (start, prods_list, prods_map)
+    return (start, indent, dedent, prods_list, prods_map)

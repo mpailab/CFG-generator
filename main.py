@@ -1,4 +1,5 @@
-import argparse
+import argparse, sys
+from os import devnull
 from random import choice, randint, shuffle
 from generator import run
 from grammar import CFG
@@ -33,6 +34,12 @@ Context-free grammar format \n
 - set the start symbol of grammar:
 % start <nonterm> 
 
+- set the indent token of grammar:
+% indent <nonterm> 
+
+- set the dedent token of grammar:
+% dedent <nonterm> 
+
 - set symbols such that additional productions can be inserted in derivation tree before subtrees corresponding these symbols:
 % syntax <nonterm> ... <nonterm>
 
@@ -52,13 +59,21 @@ parser.add_argument( '--depth', metavar='int', type=int, default=DEPTH, help='de
 parser.add_argument( '--size', metavar='int', type=int, default=SIZE, help='size of derivation tree (default: %(default)s)')
 parser.add_argument( '--dynamic', action='store_true', help='save output string in dynamic grammar')
 parser.add_argument( '--sep', metavar='str', type=str, default='=', help='derivation symbol in productions (default: %(default)s)')
+parser.add_argument( '--verbose', action='store_true', help='displays details about the process')
 args = parser.parse_args()
 
 with open(args.file, 'r') as file:
+    stdout = sys.stdout if args.verbose else open(devnull, 'w')
+    print('Read grammar ... ', file = stdout, end = '', flush = True)
     cfg = CFG.fromsource(file, args.sep)
+    print('ok', file = stdout)
+    print('Generate derivation tree ... ', file = stdout, end = '', flush = True)
     tree = run(cfg, args.depth, args.size)
+    print('ok', file = stdout)
+    print('Convert to string ... ', file = stdout, end = '', flush = True)
     if args.output == 'stdout':
         print(tree.to_str(not args.dynamic))
     else:
         with open(args.output, 'w') as output:
             output.write(tree.to_str())
+    print('ok', file = stdout)

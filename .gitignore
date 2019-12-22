@@ -103,5 +103,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# visual studio code debugger
-launch.json
+# visual studio code files
+.vscode/

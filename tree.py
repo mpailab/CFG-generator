@@ -62,7 +62,6 @@ class Node (object):
         return nodes
     
     def _to_str (self):
-        nodes = self.terminals()
         prod = self._production
         if prod is None:
             return (str(self._symbol), {})
@@ -87,22 +86,38 @@ class Node (object):
         else:
             string, prods = self._to_str()
             assert (not prods)
-        return re.sub(r'\s*\\n\s*', '\n', string)
+        string = re.sub(r'\s*\\n *', '\n', string)
+        string = re.sub(r' *\\t *', '\t', string)
+        return string
 
 class Tree (object):
 
-    def __init__ (self, symbol):
+    def __init__ (self, symbol, indent, dedent):
 
-        assert ( isinstance(symbol, Symbol) )
+        assert ( isinstance(symbol, Symbol) and 
+                 isinstance(indent, Symbol) and
+                 isinstance(dedent, Symbol) )
 
         self._root = Node(symbol)
+        self._indent = indent
+        self._dedent = dedent
         self._skips = [self._root] if symbol.skip else []
         self._leaves = [] if symbol.terminal else [self._root]
         self._size = 1
 
+    @property
     def root (self):
         return self._root
 
+    @property
+    def indent (self):
+        return self._indent
+
+    @property
+    def dedent (self):
+        return self._dedent
+
+    @property
     def skips (self):
         return self._skips
 
@@ -112,6 +127,7 @@ class Tree (object):
         assert ( isinstance(depth, int) )
         return [ x for x in self._leaves if x.depth < depth ]
 
+    @property
     def size (self):
         return self._size
 
@@ -119,7 +135,7 @@ class Tree (object):
 
         assert ( isinstance(node, Node) and not node.symbol.terminal and
                  isinstance(prod, Production) and node.symbol == prod.lhs )
-
+        
         depth = node.depth if prod.skip else node.depth + 1
         childs = [ Node(x, node, depth) for x in prod.rhs ]
 
@@ -128,11 +144,11 @@ class Tree (object):
             child = childs[i]
             child.childs = node.childs
             child.production = node.production
-            self._leaves += [ x for x in childs if not x.symbol.terminal and x != child ]
+            self._leaves += [ x for x in childs if not x.symbol.terminal and x.symbol not in [self.indent, self.dedent] and x != child ]
         else:
             assert (node in self._leaves)
             self._leaves.remove(node)
-            self._leaves += [ x for x in childs if not x.symbol.terminal ]
+            self._leaves += [ x for x in childs if not x.symbol.terminal and x.symbol not in [self.indent, self.dedent] ]
             
         node.childs = childs
         node.production = prod
@@ -143,4 +159,21 @@ class Tree (object):
         return str(self._root)
     
     def to_str (self, simple = False):
-        return self._root.to_str(simple)
+        indent = str(self.indent)
+        dedent = str(self.dedent)
+        string = self._root.to_str(simple)
+        string = re.sub(' *%s *' % indent, indent, string)
+        string = re.sub(' *%s *' % dedent, dedent, string)
+
+        def add_indent (string):
+            return '\n'.join(map(lambda x: '\t' + x, string.splitlines()))
+
+        while True:
+            m = re.compile('(.*)%s(.*?)%s(.*)' % (indent, dedent), re.S).match(string)
+            if m:
+                string = m.group(1) + add_indent(m.group(2)) + m.group(3)
+            else:
+                if re.compile('.*\b(%s|%s)\b.*' % (indent, dedent), re.S).match(string):
+                    raise ValueError('Expected that %s precedes %s, found: %s' % (indent, dedent, string))
+                break
+        return string

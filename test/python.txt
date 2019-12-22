@@ -1,6 +1,11 @@
 % start file
 % syntax file
-  file = stmt | stmt file
+% indent INDENT
+% dedent DEDENT
+
+  file = stmt
+% skip
+  file = stmt file
 
   decorator  = '@' dotted_name '\n' \
               | '@' dotted_name '(' ')\n' \
@@ -53,7 +58,7 @@
  ########################################################################
 
   stmt = simple_stmt | compound_stmt
-  simple_stmt = small_stmt ';' simple_stmt | small_stmt '\n' | small_stmt '\n'
+  simple_stmt = small_stmt ';' simple_stmt | small_stmt '\n'
   small_stmt  = expr_stmt | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
   expr_stmt   = testlist_star_expr \
                | testlist_star_expr '=' yield_expr MAYBE_TYPE_COMMENT \
@@ -113,7 +118,7 @@
 % skip
   stmts1          = stmt | stmts1 stmt
   
-  suite           = simple_stmt | '\n' INDENT stmts1 DEDENT
+  suite           = '\n' INDENT simple_stmt DEDENT | '\n' INDENT stmts1 DEDENT
 
   namedexpr_test  = test | test ':=' test
   test            = or_test | or_test 'if' or_test 'else' test | lambdef
@@ -205,7 +210,5 @@
   NUMBER  = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' 
   STRINGS = STRING | STRINGS STRING
   STRING  = '"Some text"'
-  INDENT = ' '
-  DEDENT = ' '
   ASYNC = 'async'
   
