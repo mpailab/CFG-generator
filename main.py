@@ -58,8 +58,8 @@ parser.add_argument( '--output', metavar='path', type=str, default='stdout', hel
 parser.add_argument( '--depth', metavar='int', type=int, default=DEPTH, help='depth of derivation tree (default: %(default)s)')
 parser.add_argument( '--size', metavar='int', type=int, default=SIZE, help='size of derivation tree (default: %(default)s)')
 parser.add_argument( '--dynamic', action='store_true', help='save output string in dynamic grammar')
-parser.add_argument( '--sep', metavar='str', type=str, default='\'=\'', help='derivation symbol in productions (default: %(default)s)')
-parser.add_argument( '--preamble', metavar='str', type=str, default='\"\"', help='put this string in the preamble of output file (default: %(default)s)')
+parser.add_argument( '--sep', metavar='str', type=str, default='=', help='derivation symbol in productions (default: \'%(default)s\')')
+parser.add_argument( '--preamble', metavar='str', type=str, default='', help='put this string in the preamble of output file (default: \"%(default)s\")')
 parser.add_argument( '--verbose', action='store_true', help='displays details about the process')
 args = parser.parse_args()
 
