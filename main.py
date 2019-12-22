@@ -58,7 +58,8 @@ parser.add_argument( '--output', metavar='path', type=str, default='stdout', hel
 parser.add_argument( '--depth', metavar='int', type=int, default=DEPTH, help='depth of derivation tree (default: %(default)s)')
 parser.add_argument( '--size', metavar='int', type=int, default=SIZE, help='size of derivation tree (default: %(default)s)')
 parser.add_argument( '--dynamic', action='store_true', help='save output string in dynamic grammar')
-parser.add_argument( '--sep', metavar='str', type=str, default='=', help='derivation symbol in productions (default: %(default)s)')
+parser.add_argument( '--sep', metavar='str', type=str, default='\'=\'', help='derivation symbol in productions (default: %(default)s)')
+parser.add_argument( '--preamble', metavar='str', type=str, default='\"\"', help='put this string in the preamble of output file (default: %(default)s)')
 parser.add_argument( '--verbose', action='store_true', help='displays details about the process')
 args = parser.parse_args()
 
@@ -72,8 +73,8 @@ with open(args.file, 'r') as file:
     print('ok', file = stdout)
     print('Convert to string ... ', file = stdout, end = '', flush = True)
     if args.output == 'stdout':
-        print(tree.to_str(not args.dynamic))
+        print(args.preamble + tree.to_str(not args.dynamic))
     else:
         with open(args.output, 'w') as output:
-            output.write(tree.to_str())
+            output.write(args.preamble + tree.to_str())
     print('ok', file = stdout)

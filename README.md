@@ -2,18 +2,22 @@
 
 ### Tool usage
 
-    main.py [-h] [--output path] [--depth int] [--size int] [--dynamic] [--sep str] file
+    main.py [-h] [--output path] [--depth int] [--size int] [--dynamic] 
+            [--sep str] [--preamble str] [--verbose] 
+            file
 
     positional arguments:
     file           file with grammar
 
     optional arguments:
-    -h, --help     show this help message and exit
-    --output path  output file (default: stdout)
-    --depth int    depth of derivation tree (default: 150)
-    --size int     size of derivation tree (default: 10000)
-    --dynamic      save output string in dynamic grammar
-    --sep str      derivation symbol in productions (default: =)
+    -h, --help      show this help message and exit
+    --output path   output file (default: stdout)
+    --depth int     depth of derivation tree (default: 150)
+    --size int      size of derivation tree (default: 10000)
+    --dynamic       save output string in dynamic grammar
+    --sep str       derivation symbol in productions (default: '=')
+    --preamble str  put this string in the preamble of output file (default: "")
+    --verbose       displays details about the process
 
 ### Context-free grammar format
 
