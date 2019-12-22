@@ -6,14 +6,15 @@ class Symbol (object):
 
     _dict = dict()
 
-    def __new__ (cls, symbol):
-        assert ( isinstance(symbol, str) )
+    def __new__ (cls, symbol, check = False):
+        assert ( isinstance(symbol, str) and isinstance(check, bool) )
         if symbol in Symbol._dict:
+            assert ( not check )
             return Symbol._dict[symbol]
         else:
             return super(Symbol, cls).__new__(cls)
 
-    def __init__ (self, symbol):
+    def __init__ (self, symbol, check = False):
         if symbol not in Symbol._dict:
             self._symbol = symbol
             self._syntax = False
@@ -324,4 +325,8 @@ def _parse_grammar (source, deriv_symbol = '='):
     if not prods_list:
         raise ValueError('No productions found!')
 
-    return (start, indent, dedent, prods_list, prods_map)
+
+    return (start, 
+            Symbol('INDENT', True) if indent is None else indent, 
+            Symbol('DEDENT', True) if dedent is None else dedent, 
+            prods_list, prods_map)
