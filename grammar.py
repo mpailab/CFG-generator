@@ -78,7 +78,9 @@ class Production (object):
         self._deriv_symbol = deriv_symbol
     
     def __str__ (self):
-        return str(self._lhs) + ' ' + self._deriv_symbol + ' ' + ' '.join(map(str,self._rhs))
+        return ( str(self._lhs) + ' ' 
+               + self._deriv_symbol + ' ' 
+               + ' '.join(map(lambda x: ('%r' if x.terminal else '%s') % str(x),self._rhs)) )
     
     def __hash__ (self):
         return hash((self._lhs, tuple(self._rhs)))
