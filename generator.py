@@ -22,7 +22,7 @@ def run (grammar, depth, size = 1000000):
                 indexes = sample(range(len(skip_nodes)), k)
                 for i in indexes:
                     node = skip_nodes[i]
-                    prod = choice(skip_prods[node.symbol])
+                    prod = choice([ x for x in skip_prods[node.symbol] if node.symbol in x.rhs ])
                     tree.insert(node, prod)
             else:
                 break
