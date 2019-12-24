@@ -8,6 +8,8 @@ from tree import Tree
 DEPTH = 150
 SIZE = 10000
 
+sys.setrecursionlimit(1000000)
+
 parser = argparse.ArgumentParser( description='generate an arbitrary string in context-free grammar',
                                   formatter_class=argparse.RawDescriptionHelpFormatter, epilog='''
 Context-free grammar format \n
@@ -32,13 +34,13 @@ Context-free grammar format \n
 6. There are four directives
 
 - set the start symbol of grammar:
-% start <nonterm> 
+% start <nonterm>
 
 - set the indent token of grammar:
-% indent <nonterm> 
+% indent <nonterm>
 
 - set the dedent token of grammar:
-% dedent <nonterm> 
+% dedent <nonterm>
 
 - set symbols such that additional productions can be inserted in derivation tree before subtrees corresponding these symbols:
 % syntax <nonterm> ... <nonterm>
@@ -72,9 +74,12 @@ with open(args.file, 'r') as file:
     tree = run(cfg, args.depth, args.size)
     print('ok', file = stdout)
     print('Convert to string ... ', file = stdout, end = '', flush = True)
+    if args.preamble != '':
+        preamble = open(args.preamble,'r').read()+'\n'
+    else: preamble = ''
     if args.output == 'stdout':
-        print(args.preamble + tree.to_str(not args.dynamic))
+        print(preamble + tree.to_str(not args.dynamic))
     else:
         with open(args.output, 'w') as output:
-            output.write(args.preamble + tree.to_str())
+            output.write(preamble + tree.to_str())
     print('ok', file = stdout)

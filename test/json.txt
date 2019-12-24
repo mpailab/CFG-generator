@@ -1,0 +1,22 @@
+# An example of context-free grammar
+
+% start text
+% syntax text
+% indent INDENT
+% dedent DEDENT
+  text = complex_dict | complex_list
+  simple = 'true' | 'false' | 'null' | number | string | '[' ']' | '{' '}'
+  complex_list = '[\n' INDENT elements DEDENT ']'
+  complex_dict =  '{\n' INDENT records DEDENT '}'
+  value = complex_list | complex_dict | simple
+  records = record
+% skip
+  records = records ',\n' record
+  record = string ':' value
+  
+  elements = value
+% skip
+  elements = elements ',\n' value
+
+  string = '"String A"' | '"A"' | '"B"' | '"c"' | '"d"' | '"Some string"'
+  number = '0' | '1' | '2.34' | '4.10' | '-3.50' | '-0.56' | '-5'

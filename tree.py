@@ -166,7 +166,7 @@ class Tree (object):
         string = re.sub(' *%s *' % dedent, dedent, string)
 
         def add_indent (string):
-            return '\n'.join(map(lambda x: '\t' + x, string.splitlines()))
+            return '\n'.join(map(lambda x: '\t' + x, string.splitlines()))+'\n'
 
         while True:
             m = re.compile('(.*)%s(.*?)%s(.*)' % (indent, dedent), re.S).match(string)

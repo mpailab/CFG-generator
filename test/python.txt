@@ -58,7 +58,8 @@
  ########################################################################
 
   stmt = simple_stmt | compound_stmt
-  simple_stmt = small_stmt ';' simple_stmt | small_stmt '\n'
+  #simple_stmt = small_stmt ';' simple_stmt | small_stmt '\n'
+  simple_stmt = small_stmt '\n'
   small_stmt  = expr_stmt | del_stmt | pass_stmt | flow_stmt | import_stmt | global_stmt | nonlocal_stmt | assert_stmt
   expr_stmt   = testlist_star_expr \
                | testlist_star_expr '=' yield_expr MAYBE_TYPE_COMMENT \
@@ -201,8 +202,8 @@
 # the TYPE_COMMENT in suites is only parsed for funcdefs,
 # but can't go elsewhere due to ambiguity
   func_body_suite = simple_stmt \
-                   | '\n' INDENT stmts1 DEDENT \
-				   | '\n' TYPE_COMMENT '\n' INDENT stmts1 DEDENT
+                   | '\n' INDENT stmts1 DEDENT '\n' \
+				   | '\n' TYPE_COMMENT '\n' INDENT stmts1 DEDENT '\n'
 
   TYPE_COMMENT = '""" Some comment """'
   MAYBE_TYPE_COMMENT = TYPE_COMMENT | ' '
